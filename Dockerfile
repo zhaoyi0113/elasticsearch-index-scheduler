@@ -1,6 +1,6 @@
 FROM golang:1.17-alpine
 
-RUN apk update && apk add ca-certificates openssl make
+RUN apk update && apk add ca-certificates openssl make git
 
 ARG cert_location=/usr/local/share/ca-certificates
 
@@ -13,8 +13,9 @@ RUN update-ca-certificates
 
 WORKDIR /app
 
-COPY * ./
+COPY . ./
 
+RUN ls
 RUN go mod download
 
 RUN make build

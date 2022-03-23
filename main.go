@@ -4,7 +4,7 @@ import (
 	"os"
 	"strconv"
 
-	internal "github.com/zhaoyi0113/es/scheduler/internal"
+	"github.com/zhaoyi0113/es/scheduler/internal"
 )
 
 func main() {
