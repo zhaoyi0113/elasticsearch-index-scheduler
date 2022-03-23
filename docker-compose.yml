@@ -16,4 +16,4 @@ services:
       - 9200:9200
 
   app:
-    
+    build: .
