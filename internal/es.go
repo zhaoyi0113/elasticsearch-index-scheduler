@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v8"
@@ -33,14 +32,11 @@ func createESClient() *elasticsearch.Client {
 	return es
 }
 
-type ESIndex struct {
-}
-
-func RemoveOldIndex(indexPrefix string, days int) {
-	fmt.Printf("remove index %s older than %d", indexPrefix, days)
+func RemoveOldIndex(days int) {
+	fmt.Printf("remove index older than %d", days)
 	es := createESClient()
 	log.Println(es.Info())
-	res, err := esapi.CatIndicesRequest{Format: "json"}.Do(context.Background(), es)
+	res, err := esapi.CatIndicesRequest{Format: "json", H: []string{"i", "creation.date.string"}}.Do(context.Background(), es)
 	CheckError(err, "Failed to create index request")
 	defer res.Body.Close()
 	fmt.Println(res.String())
@@ -50,14 +46,16 @@ func RemoveOldIndex(indexPrefix string, days int) {
 	baseDate := time.Now().AddDate(0, 0, -7)
 	fmt.Println("base date", baseDate)
 	for _, s := range r {
-		index := strings.ReplaceAll(fmt.Sprintf("%v", s["index"]), indexPrefix, "")
-		fmt.Println(index)
-		indexDate, err := time.Parse("2006-01-02", index)
+
+		index := fmt.Sprintf("%v", s["creation.date.string"])
+		indexDate, err := time.Parse(time.RFC3339, index)
 		if err == nil {
-			fmt.Println(indexDate.String())
+			fmt.Println(index, indexDate.String())
 			if indexDate.Before(baseDate) {
 				fmt.Println("delete index", index)
 			}
+		} else {
+			log.Println("Failed to parse index", err)
 		}
 	}
 }
