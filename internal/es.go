@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v8"
@@ -32,7 +33,7 @@ func createESClient() *elasticsearch.Client {
 	return es
 }
 
-func RemoveOldIndex(days int) {
+func RemoveOldIndex(prefix string, days int) {
 	fmt.Printf("remove index older than %d", days)
 	es := createESClient()
 	log.Println(es.Info())
@@ -43,16 +44,18 @@ func RemoveOldIndex(days int) {
 	var r []map[string]interface{}
 	err = json.NewDecoder(res.Body).Decode(&r)
 	CheckError(err, "Failed to parse index response")
-	baseDate := time.Now().AddDate(0, 0, -7)
-	fmt.Println("base date", baseDate)
+	baseDate := time.Now().AddDate(0, 0, -days)
 	for _, s := range r {
-
-		index := fmt.Sprintf("%v", s["creation.date.string"])
-		indexDate, err := time.Parse(time.RFC3339, index)
-		if err == nil {
+		index := fmt.Sprintf("%v", s["i"])
+		indexCreatedDate := fmt.Sprintf("%v", s["creation.date.string"])
+		indexDate, err := time.Parse(time.RFC3339, indexCreatedDate)
+		if err == nil && strings.HasPrefix(index, prefix) {
 			fmt.Println(index, indexDate.String())
 			if indexDate.Before(baseDate) {
 				fmt.Println("delete index", index)
+				res, err := esapi.IndicesDeleteRequest{Index: []string{index}}.Do(context.Background(), es)
+				CheckError(err, "Failed to delete index:"+index)
+				fmt.Println("delete index success" + index + "," + res.String())
 			}
 		} else {
 			log.Println("Failed to parse index", err)

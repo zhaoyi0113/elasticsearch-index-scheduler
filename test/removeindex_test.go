@@ -35,5 +35,5 @@ func beforeAll() {
 
 func TestHelloName(t *testing.T) {
 	beforeAll()
-	internal.RemoveOldIndex(7)
+	internal.RemoveOldIndex("aws", 7)
 }
